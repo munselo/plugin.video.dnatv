@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<strings>
+  <string id="30000">Asetukset</string>
+  <string id="30001">Käyttäjänimi</string>
+  <string id="30002">Salasana</string>
+  <string id="30003">Palvelu</string>
+  <string id="30005">Suorat lähetykset</string>
+  <string id="30006">Tallenteet</string>
+</strings>

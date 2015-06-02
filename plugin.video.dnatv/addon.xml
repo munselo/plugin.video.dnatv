@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.dnatv" name="DNATV" version="0.1" provider-name="munselo">
+    <requires>
+        <import addon="xbmc.python" version="2.1.0"/>
+        <import addon="script.module.requests"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="addon.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <platform>all</platform>
+	<language>fi</language>
+        <summary>DNATV</summary>
+        <description lang="en">Watch your DNATV recordings and TV streams. You must have valid user account to use this plugin</description>
+        <description lang="fi">Katso DNATV palvelun tallenteita tai TV-lähetyksiä. Tarvitset voimassaolevan DNATV:n käyttäjätunnuksen</description>
+    </extension>
+</addon>
