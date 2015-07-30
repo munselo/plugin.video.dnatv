@@ -6,4 +6,12 @@
   <string id="30003">Palvelu</string>
   <string id="30005">Suorat lähetykset</string>
   <string id="30006">Tallenteet</string>
+  <string id="30007">Poista</string>
+  <string id="30008">Lataa</string>
+  <string id="30009">Päivitä</string>
+  <string id="30010">Latauskansio</string>
+  <string id="30050">Tallennus poistettiin</string>
+  <string id="30051">Lataus alkoi</string>
+  <string id="30052">Lataus suoritettu</string>
 </strings>
+

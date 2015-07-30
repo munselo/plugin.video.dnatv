@@ -1,18 +1,15 @@
 # -*- coding: utf-8 -*-
-import json
+import sys, json, time, re
 import requests
 from requests.auth import HTTPDigestAuth
 import urlparse
-import time
-import sys
 
 class DNATVSession(requests.Session):
 	def __init__(self, username, password, servicename, testing = False):
 		requests.Session.__init__(self)
-		self.testing=testing
+		self.testing = testing
 		if not testing:
-			import xbmcgui
-			import xbmcaddon
+			import xbmcgui, xbmc
 		services = ['dnatv', 'booxtv']
 		servicedata = [[{'service' : 'dnaclient', 'ver' : '0.5'},
 					{'serviceUser' : 'dnaclient'},
@@ -118,12 +115,84 @@ class DNATVSession(requests.Session):
 			print "Logged out: " + str(not self.loggedin)
 		return self.loggedin
 
+	def deleterecording(self, programid):
+		print "delete recording " + str(programid)
+		payload = { 'program_uids' : str(programid), 'service' : self.servicedata[3], 'ajax' : '1'}
+		response = self.delete(self.SITE + '/recording', params=payload)
+		import xbmcaddon
+		settings = xbmcaddon.Addon(id='plugin.video.dnatv')
+		recordings = json.loads(settings.getSetting( id='recordingList'))
+		index = 0		
+		for i in range(len(recordings)):
+			if str(programid) == recordings[i]['programUid']:
+				index = i
+				break
+		recording = recordings[index]
+		start_time = recording['startTime'].split()[4][:5]
+		s_time = time.strptime(recording['startTime'][:-6], '%a, %d %b %Y %H:%M:%S')
+		startDate = str(s_time[0]) + '.' + '%02d' % (s_time[1]) + '.'  + '%02d' % (s_time[2])
+		deletenotification = recording['title'] + ' ' + startDate + ' ' + start_time
+		recordings.pop(index)
+		settings.setSetting( id='recordingList', value=json.dumps(recordings))
+		xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30050) + ", " + deletenotification + ")")
+		xbmc.executebuiltin('XBMC.Container.Refresh')
+
+	def downloadrecording(self, programid):
+		if self.testing:
+			recordings = self.getrecordings()
+			dlfolder = ''
+		else:
+			import xbmcaddon
+			settings = xbmcaddon.Addon(id='plugin.video.dnatv')
+			recordings = json.loads(settings.getSetting( id='recordingList'))
+			dlfolder = settings.getSetting( id='dlfolder')
+		for recording in recordings:
+			if (str(sys.argv[5]) in recording['programUid']) or (str(sys.argv[5]).lower() in recording['title'].lower()):
+				print recording['title']
+				dlurl = self.getplayableurl(recording['recordings'][1]['stream']['streamUrl']).headers.get('location')
+				print dlurl
+				start_time = recording['startTime'].split()[4][:5].replace(':','')
+				s_time = time.strptime(recording['startTime'][:-6], '%a, %d %b %Y %H:%M:%S')
+				startDate = str(s_time[0]) + '.' + '%02d' % (s_time[1]) + '.'  + '%02d' % (s_time[2])
+				fOut = recording['title'] + ' ' + startDate + ' ' + start_time + '.mp4'
+				fOut = re.sub('[<>"/\|?*]',"", fOut)
+				fOut = dlfolder + fOut.replace(':',',')
+				print fOut
+				response = requests.get(dlurl, stream=True)
+				downloadnotification = recording['title'] + ' ' + startDate + ' ' + start_time
+				if response.status_code == 200:
+					if self.testing:
+						print 'download started'
+					else:
+						xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30051) + ", " + downloadnotification + ")")
+					with open(fOut, 'wb') as f:
+						for chunk in response.iter_content(1024):
+							f.write(chunk)
+							if self.testing:
+								break
+					if self.testing:
+						print 'download completed'
+					else:
+						xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30052) + ", " + downloadnotification + ")")
+				
 if __name__ == '__main__':
 	print str(sys.argv)
-	print time.time()
-	testsession = DNATVSession(sys.argv[1], sys.argv[2], sys.argv[3], True)
-	if testsession.login():
+	if len(sys.argv) < 4:
+		sys.exit()
+	if 'test' in sys.argv:
 		print time.time()
-		testsession.getrecordings()		
-		print time.time()
-		testsession.logout()
+		tsession = DNATVSession(sys.argv[1], sys.argv[2], sys.argv[3], True)
+	else:
+		tsession = DNATVSession(sys.argv[1], sys.argv[2], sys.argv[3])		
+
+	if tsession.login():
+		if tsession.testing:
+			print time.time()
+
+		if str(sys.argv[4]) == 'delete':
+			tsession.deleterecording(sys.argv[5])
+
+		if str(sys.argv[4]) == 'download':
+			tsession.downloadrecording(sys.argv[5])
+	
+		tsession.logout()

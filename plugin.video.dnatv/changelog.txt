@@ -1,2 +1,5 @@
+v0.2
+- added download and delete recording functions
+
 v0.1
 - first release

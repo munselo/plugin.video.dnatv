@@ -37,6 +37,13 @@ def build_li(recording, folder, title=None):
 		li.setInfo('video', { 'StartTime': start_time[4] , 'Date' : startDate,
 			'title' : recording['title'],'Plot' : recording['description']})
 		li.setProperty('IsPlayable', 'true')
+		argsDelete = username + ', ' + password + ', ' + servicename + ', ' + 'delete' + ', ' + recording['programUid']
+		deleteRecording = 'XBMC.RunScript(special://home/addons/plugin.video.dnatv/dnatv.py, ' + argsDelete + ')'
+		argsDownload = username + ', ' + password + ', ' + servicename + ', ' + 'download' + ', ' + recording['programUid']
+		downloadRecording = 'XBMC.RunScript(special://home/addons/plugin.video.dnatv/dnatv.py, ' + argsDownload + ')'
+		li.addContextMenuItems([(settings.getLocalizedString(30007), deleteRecording),
+			(settings.getLocalizedString(30008), downloadRecording),
+			(settings.getLocalizedString(30009), 'Container.Refresh')])
 	return li
 
 def main_dir():
@@ -146,8 +153,10 @@ def livetv_dir():
 		for channel in liveTV:
 			if not channel['isUserAuthorized']:
 				continue
-			url = build_url({'mode': 'watch',
-				'videoUrl': channel['liveService']['services'][0]['stream']['streamUrl']})
+			try:
+				url = build_url({'mode': 'watch', 'videoUrl': channel['liveService']['services'][0]['stream']['streamUrl']})
+			except IndexError:
+				continue
 			li = xbmcgui.ListItem(channel['title'], iconImage='DefaultFile.png')
 			start_time = channel['epg'][0]['startTime'].split()
 			li.setInfo('video', { 'StartTime': start_time[4],
