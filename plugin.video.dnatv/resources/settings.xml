@@ -10,5 +10,7 @@
 		<setting id="lastLiveTVrefresh" type="number" visible="False" default="0" />
 		<setting id="liveTVList" type="text" visible="False" default="0" />
 		<setting id="seriestitles" type="text" visible="False" default="0" />
+		<setting id="ssid" type="text" visible="False" default="0" />
+		<setting id="usid" type="text" visible="False" default="0" />
 	</category>
 </settings>

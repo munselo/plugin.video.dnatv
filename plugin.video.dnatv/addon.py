@@ -25,6 +25,12 @@ xbmcplugin.setContent(addon_handle, 'movies')
 def build_url(query):
 	return base_url + '?' + urllib.urlencode(query)
 
+def add_logout_context_menu_item(li):
+	argsLogout = username + ', ' + password + ', ' + servicename + ', ' + 'logout' + ', '
+	logout = 'XBMC.RunScript(special://home/addons/plugin.video.dnatv/dnatv.py, ' + argsLogout + ')'
+	li.addContextMenuItems([(settings.getLocalizedString(30011), logout)])
+	return li
+
 def build_li(recording, folder, title=None):
 	start_time = recording['startTime'].split()
 	s_time = time.strptime(recording['startTime'][:-6], '%a, %d %b %Y %H:%M:%S')
@@ -32,6 +38,7 @@ def build_li(recording, folder, title=None):
 	if folder:
 		li = xbmcgui.ListItem(title + ' (' + startDate + ')',iconImage='DefaultFolder.png')
 		li.setInfo('video', { 'Date' : startDate})
+		add_logout_context_menu_item( li )
 	else:
 		li = xbmcgui.ListItem(recording['title'],iconImage = 'DefaultFile.png')
 		li.setInfo('video', { 'StartTime': start_time[4] , 'Date' : startDate,
@@ -41,19 +48,27 @@ def build_li(recording, folder, title=None):
 		deleteRecording = 'XBMC.RunScript(special://home/addons/plugin.video.dnatv/dnatv.py, ' + argsDelete + ')'
 		argsDownload = username + ', ' + password + ', ' + servicename + ', ' + 'download' + ', ' + recording['programUid']
 		downloadRecording = 'XBMC.RunScript(special://home/addons/plugin.video.dnatv/dnatv.py, ' + argsDownload + ')'
-		li.addContextMenuItems([(settings.getLocalizedString(30007), deleteRecording),
+		argsLogout = username + ', ' + password + ', ' + servicename + ', ' + 'logout' + ', '
+		logout = 'XBMC.RunScript(special://home/addons/plugin.video.dnatv/dnatv.py, ' + argsLogout + ')'
+		li = add_logout_context_menu_item( li )
+		li.addContextMenuItems([
+			(settings.getLocalizedString(30007), deleteRecording),
 			(settings.getLocalizedString(30008), downloadRecording),
-			(settings.getLocalizedString(30009), 'Container.Refresh')])
+			(settings.getLocalizedString(30009), 'Container.Refresh'),
+			(settings.getLocalizedString(30011), logout)
+			])
 	return li
 
 def main_dir():
 
 	url = build_url({'foldername': 'liveTV'})
 	li = xbmcgui.ListItem(label = settings.getLocalizedString(30005), iconImage = 'DefaultFolder.png')
+	add_logout_context_menu_item( li )
 	xbmcplugin.addDirectoryItem(handle = addon_handle, url = url, listitem = li, isFolder = True)
 
 	url = build_url({'foldername': 'recordings'})
 	li = xbmcgui.ListItem(label = settings.getLocalizedString(30006), iconImage = 'DefaultFolder.png')
+	add_logout_context_menu_item( li )
 	xbmcplugin.addDirectoryItem(handle = addon_handle, url = url, listitem = li, isFolder = True)
 
 	xbmcplugin.endOfDirectory(addon_handle)
@@ -70,7 +85,6 @@ def recordings_dir():
 			recordings = dnatv.getrecordings()
 			settings.setSetting( id='lastRecordingsRefresh', value=str(int(time.time())))
 			settings.setSetting( id='recordingList', value=json.dumps(recordings))
-			dnatv.logout()
 
 	else:
 		recordings = json.loads(settings.getSetting( id='recordingList'))
@@ -109,14 +123,14 @@ def recordings_dir():
 				if not seriestitle in existingfolders:
 					existingfolders.append(seriestitle)
 					url = build_url({'foldername': serieslist.index(seriestitle)})
-					li = build_li(recording,True, seriestitle)
+					li = build_li(recording, True, seriestitle)
 					xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
 				recording['series'] = seriestitle
 				groupmember = True
 		if groupmember:
 			continue
 		url = build_url({'mode': 'watch', 'videoUrl': recording['recordings'][1]['stream']['streamUrl']})
-		li = build_li(recording,False)
+		li = build_li(recording, False)
 		xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
 
 	if isnewlist:
@@ -149,7 +163,6 @@ def livetv_dir():
 	dnatv = DNATVSession(username, password, servicename)
 	if dnatv.login():
 		liveTV = dnatv.getlivetv()
-		dnatv.logout()
 		for channel in liveTV:
 			if not channel['isUserAuthorized']:
 				continue
@@ -162,6 +175,7 @@ def livetv_dir():
 			li.setInfo('video', { 'StartTime': start_time[4],
 				'Plot' : channel['epg'][0]['title'] + '\n' + channel['epg'][0]['description']})
 			li.setProperty('IsPlayable', 'true')
+			add_logout_context_menu_item( li )
 			xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
 		xbmcplugin.endOfDirectory(addon_handle)	
 	
@@ -175,11 +189,6 @@ def watch_program():
 		listitem.setInfo('video', {'Title': title})
 		listitem.setPath(url)
 		xbmcplugin.setResolvedUrl(handle=addon_handle, succeeded=True, listitem=listitem)
-		xbmc.sleep(1000)
-		while xbmc.Player().isPlaying():
-			xbmc.sleep(250)
-		xbmc.Player().stop
-		dnatv.logout()
 
 def main():
 	mode = args.get('mode', None)

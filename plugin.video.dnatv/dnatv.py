@@ -9,7 +9,14 @@ class DNATVSession(requests.Session):
 		requests.Session.__init__(self)
 		self.testing = testing
 		if not testing:
-			import xbmcgui, xbmc
+			import xbmcgui, xbmc, xbmcaddon
+			settings = xbmcaddon.Addon(id='plugin.video.dnatv')
+			self.cookies.update ({'ssid' : settings.getSetting( id='ssid')})
+			self.cookies.update ({'usid' : settings.getSetting( id='usid')})
+		else:
+			self.cookies.update({'ssid':'-'})
+			self.cookies.update({'usid':'-'})
+
 		services = ['dnatv', 'booxtv']
 		servicedata = [[{'service' : 'dnaclient', 'ver' : '0.5'},
 					{'serviceUser' : 'dnaclient'},
@@ -24,36 +31,52 @@ class DNATVSession(requests.Session):
 		self.SITE = self.servicedata[2] + "/api/user/"+username
 		self.loggedin = False
 		self.digest_auth = HTTPDigestAuth(username, password)
-		loginpage = ["https://matkatv.dna.fi/webui/site/login", 'https://webui.booxtv.fi/webui/site/login']
-		self.get(loginpage[services.index(servicename)])
-		
-	def login(self):
-		# sessionid and x-authenticate response
-		payload = {'YII_CSRF_TOKEN' : self.cookies['YII_CSRF_TOKEN'], 'ajax' : '1', 'auth_user': '1',
-			'device_id' : '1'}
-		payload.update(self.servicedata[0])
-		# self.cookies.update({'lang':'fi'})
-		response = self.post(self.SITE + '/login', params=payload)
-		s_auth = response.headers.get('x-authenticate', '')
-		# ssid
-		payload2 = {'authParams': s_auth, 'uri' : self.SITE + '/login'}
-		payload2.update(self.servicedata[1])
-		response = self.post(self.servicedata[2] +'/auth/service', payload2 )
-		# another x-authenticate response with realm="user"
-		response = self.post(self.SITE + '/login', payload)
-		# finally login with digest auth
-		s_auth = response.headers.get('x-authenticate', '')
-		self.digest_auth.chal = requests.utils.parse_dict_header(s_auth.replace('Digest ', ''))
-		request = requests.Request('POST', self.SITE + '/login', data = payload)
-		request.headers.update({'Authorization' : self.digest_auth.build_digest_header('POST', self.SITE + '/login')})
-		prepped = self.prepare_request(request)
-		response = self.send(prepped)
-		if 'usid' in self.cookies:
-			self.loggedin = True
-		if self.testing:
-			print "Logged in : " + str(self.loggedin)
-		return self.loggedin
+		loginpage = ['https://matkatv.dna.fi/webui/site/login', 'https://webui.booxtv.fi/webui/site/login']
+		response = self.get(loginpage[services.index(servicename)])
 
+		if username in response.text:
+			self.loggedin = True
+		else:
+			# saved session already expired or logged out
+			print 'Needs login to booxmedia service'
+			self.cookies.pop('ssid')			
+			self.cookies.pop('usid')
+
+	def login(self):
+		if not self.loggedin:
+			# sessionid and x-authenticate response
+			payload = {'YII_CSRF_TOKEN' : self.cookies['YII_CSRF_TOKEN'], 'ajax' : '1', 'auth_user': '1',
+				'device_id' : '1'}
+			payload.update(self.servicedata[0])
+			# self.cookies.update({'lang':'fi'})
+			response = self.post(self.SITE + '/login', params=payload)
+			s_auth = response.headers.get('x-authenticate', '')
+			# ssid
+			payload2 = {'authParams': s_auth, 'uri' : self.SITE + '/login'}
+			payload2.update(self.servicedata[1])
+			response = self.post(self.servicedata[2] +'/auth/service', payload2 )
+			# another x-authenticate response with realm="user"
+			response = self.post(self.SITE + '/login', payload)
+			# finally login with digest auth
+			s_auth = response.headers.get('x-authenticate', '')
+			self.digest_auth.chal = requests.utils.parse_dict_header(s_auth.replace('Digest ', ''))
+			request = requests.Request('POST', self.SITE + '/login', data = payload)
+			request.headers.update({'Authorization' : self.digest_auth.build_digest_header('POST', self.SITE + '/login')})
+			prepped = self.prepare_request(request)
+			response = self.send(prepped)
+			if 'usid' in self.cookies:
+				self.loggedin = True
+				if not self.testing:
+					import xbmcgui, xbmc, xbmcaddon
+					settings = xbmcaddon.Addon(id='plugin.video.dnatv')
+					ssid = settings.setSetting( id = 'ssid', value = self.cookies.get('ssid'))
+					usid = settings.setSetting( id = 'usid', value = self.cookies.get('usid'))
+			if self.testing:
+				print "Logged in : " + str(self.loggedin)
+				print self.cookies.get('ssid')
+				print self.cookies.get('usid')
+		return self.loggedin
+	
 	def getrecordingpage(self, page):
 		data = None
 		pg = '&pg=' + str(page)
@@ -109,10 +132,20 @@ class DNATVSession(requests.Session):
 			return self.loggedin
 		payload = {'ajax' : '1', 'service' : self.servicedata[3]}
 		response = self.post(self.SITE + '/logout', params=payload)
-		if 'usid' not in self.cookies:
+		if not self.testing:
+			import xbmcaddon
+			settings = xbmcaddon.Addon(id='plugin.video.dnatv')
+		if 'usid=deleted' in response.headers.get('set-cookie'):
 			self.loggedin = False
-		if self.testing:
-			print "Logged out: " + str(not self.loggedin)
+			if self.testing:
+				print "Logged out: " + str(not self.loggedin)
+			else:
+				xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30053) + ", " + ")")
+		else:
+			if self.testing:
+				print "Logged out: " + str(not self.loggedin)
+			else:
+				xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30054) + ", " + ")")
 		return self.loggedin
 
 	def deleterecording(self, programid):
@@ -194,5 +227,6 @@ if __name__ == '__main__':
 
 		if str(sys.argv[4]) == 'download':
 			tsession.downloadrecording(sys.argv[5])
-	
-		tsession.logout()
+
+		if str(sys.argv[4]) == 'logout':
+			tsession.logout()

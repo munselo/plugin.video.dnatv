@@ -10,7 +10,10 @@
   <string id="30008">Download</string>
   <string id="30009">Update</string>
   <string id="30010">Download folder</string>
+  <string id="30011">Logout</string>
   <string id="30050">Deleted recording</string>
   <string id="30051">Download started</string>
   <string id="30052">Download finished</string>
+  <string id="30053">Logged Out</string>
+  <string id="30054">Logout failed</string>
 </strings>
