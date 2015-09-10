@@ -18,9 +18,9 @@ class DNATVSession(requests.Session):
 			self.cookies.update({'usid':'-'})
 
 		services = ['dnatv', 'booxtv']
-		servicedata = [[{'service' : 'dnaclient', 'ver' : '0.5'},
+		servicedata = [[{'service' : 'dnaclient', 'ver' : '0.6'},
 					{'serviceUser' : 'dnaclient'},
-					'https://matkatv.dna.fi',
+					'https://tv.dna.fi',
 					'dnaclient'],
 			{'service' : 'mobileclient', 'ver' : '1.8'},
 					{},
@@ -31,7 +31,7 @@ class DNATVSession(requests.Session):
 		self.SITE = self.servicedata[2] + "/api/user/"+username
 		self.loggedin = False
 		self.digest_auth = HTTPDigestAuth(username, password)
-		loginpage = ['https://matkatv.dna.fi/webui/site/login', 'https://webui.booxtv.fi/webui/site/login']
+		loginpage = ['https://tv.dna.fi/webui/site/login', 'https://webui.booxtv.fi/webui/site/login']
 		response = self.get(loginpage[services.index(servicename)])
 
 		if username in response.text:
@@ -196,18 +196,20 @@ class DNATVSession(requests.Session):
 				if response.status_code == 200:
 					if self.testing:
 						print 'download started'
+						with open(fOut, 'wb') as f:
+							for chunk in response.iter_content(1024):
+								f.write(chunk)
+						print 'download completed'
+
 					else:
+						import xbmcvfs
 						xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30051) + ", " + downloadnotification + ")")
-					with open(fOut, 'wb') as f:
+						f= xbmcvfs.File(fOut, 'w')
 						for chunk in response.iter_content(1024):
 							f.write(chunk)
-							if self.testing:
-								break
-					if self.testing:
-						print 'download completed'
-					else:
+						f.close()
 						xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30052) + ", " + downloadnotification + ")")
-				
+
 if __name__ == '__main__':
 	print str(sys.argv)
 	if len(sys.argv) < 4:
