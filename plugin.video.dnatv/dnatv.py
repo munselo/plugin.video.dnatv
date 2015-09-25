@@ -230,5 +230,5 @@ if __name__ == '__main__':
 		if str(sys.argv[4]) == 'download':
 			tsession.downloadrecording(sys.argv[5])
 
-		if str(sys.argv[4]) == 'logout':
+		if str(sys.argv[4]) == 'logout' or tsession.testing:
 			tsession.logout()
