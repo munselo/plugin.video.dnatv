@@ -31,6 +31,7 @@ class DNATVSession(requests.Session):
 		self.SITE = self.servicedata[2] + "/api/user/"+username
 		self.loggedin = False
 		self.digest_auth = HTTPDigestAuth(username, password)
+		self.digest_auth.init_per_thread_state()
 		loginpage = ['https://tv.dna.fi/webui/site/login', 'https://webui.booxtv.fi/webui/site/login']
 		response = self.get(loginpage[services.index(servicename)])
 
@@ -59,7 +60,7 @@ class DNATVSession(requests.Session):
 			response = self.post(self.SITE + '/login', payload)
 			# finally login with digest auth
 			s_auth = response.headers.get('x-authenticate', '')
-			self.digest_auth.chal = requests.utils.parse_dict_header(s_auth.replace('Digest ', ''))
+			self.digest_auth._thread_local.chal = requests.utils.parse_dict_header(s_auth.replace('Digest ', ''))
 			request = requests.Request('POST', self.SITE + '/login', data = payload)
 			request.headers.update({'Authorization' : self.digest_auth.build_digest_header('POST', self.SITE + '/login')})
 			prepped = self.prepare_request(request)
@@ -209,7 +210,7 @@ class DNATVSession(requests.Session):
 							f.write(chunk)
 						f.close()
 						xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30052) + ", " + downloadnotification + ")")
-
+				
 if __name__ == '__main__':
 	print str(sys.argv)
 	if len(sys.argv) < 4:
@@ -230,5 +231,5 @@ if __name__ == '__main__':
 		if str(sys.argv[4]) == 'download':
 			tsession.downloadrecording(sys.argv[5])
 
-		if str(sys.argv[4]) == 'logout' or tsession.testing:
+		if str(sys.argv[4]) == 'logout':
 			tsession.logout()

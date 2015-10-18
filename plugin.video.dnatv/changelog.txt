@@ -1,3 +1,6 @@
+v0.3.1
+- Works only with requests 2.8.1.
+
 v0.3
 - Removed login-logout cycle from every operation. Login only when cookies have expired. Logout still possible from context menu. 
 
