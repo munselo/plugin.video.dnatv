@@ -18,14 +18,15 @@ class DNATVSession(requests.Session):
 			self.cookies.update({'usid':'-'})
 
 		services = ['dnatv', 'booxtv']
-		servicedata = [[{'service' : 'dnaclient', 'ver' : '0.6'},
+		servicedata = [
+			[{'service' : 'dnaclient', 'ver' : '0.6'},
 					{'serviceUser' : 'dnaclient'},
 					'https://tv.dna.fi',
 					'dnaclient'],
-			{'service' : 'mobileclient', 'ver' : '1.8'},
+			[{'service' : 'mobileclient', 'ver' : '1.8'},
 					{},
 					'https://webui.booxtv.fi',
-					'mobileclient'
+					'mobileclient']
 			]
 		self.servicedata = servicedata[services.index(servicename)]
 		self.SITE = self.servicedata[2] + "/api/user/"+username
