@@ -3,7 +3,7 @@
 	<category label="30000">
 		<setting id="username" type="text" label="30001" default="" />
 		<setting id="password" type="text" option="hidden" label="30002" enable="!eq(-1,)" default="" />
-		<setting id="servicename" type="select" label="30003" values="dnatv|booxtv" visible="False" default="dnatv"/>
+		<setting id="servicename" type="select" label="30003" values="dnatv|booxtv" visible="True" default="dnatv"/>
 		<setting id="dlfolder" type="folder" source="auto" option="writeable" label="30010" />
 		<setting id="lastRecordingsRefresh" type="number" visible="False" default="0" />
 		<setting id="recordingList" type="text" visible="False" default="0" />
