@@ -212,7 +212,7 @@ class DNATVSession(requests.Session):
 						xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30052) + ", " + downloadnotification + ")")
 				
 if __name__ == '__main__':
-	print str(sys.argv)
+#	print str(sys.argv)
 	if len(sys.argv) < 4:
 		sys.exit()
 	if 'test' in sys.argv:
