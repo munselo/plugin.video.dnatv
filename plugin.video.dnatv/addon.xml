@@ -11,7 +11,7 @@
         <platform>all</platform>
 	<language>fi</language>
         <summary>DNATV</summary>
-        <description lang="en">Watch your DNATV recordings and TV streams. You must have valid user account to use this plugin</description>
-        <description lang="fi">Katso DNATV palvelun tallenteita tai TV-lähetyksiä. Tarvitset voimassaolevan DNATV:n käyttäjätunnuksen</description>
+        <description lang="en">Watch your DNATV or Booxtv recordings and TV streams. You must have valid user account to use this plugin</description>
+        <description lang="fi">Katso DNATV tai Booxtv palvelun tallenteita tai TV-lähetyksiä. Tarvitset voimassaolevan käyttäjätunnuksen</description>
     </extension>
 </addon>

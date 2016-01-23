@@ -23,10 +23,10 @@ class DNATVSession(requests.Session):
 					{'serviceUser' : 'dnaclient'},
 					'https://tv.dna.fi',
 					'dnaclient'],
-			[{'service' : 'mobileclient', 'ver' : '1.8'},
-					{},
+			[{'service' : 'betaserver', 'ver' : '1.8'},
+					{'serviceUser' : 'betaserver'},
 					'https://webui.booxtv.fi',
-					'mobileclient']
+					'betaserver']
 			]
 		self.servicedata = servicedata[services.index(servicename)]
 		self.SITE = self.servicedata[2] + "/api/user/"+username
@@ -74,9 +74,9 @@ class DNATVSession(requests.Session):
 					ssid = settings.setSetting( id = 'ssid', value = self.cookies.get('ssid'))
 					usid = settings.setSetting( id = 'usid', value = self.cookies.get('usid'))
 			if self.testing:
-				print "Logged in : " + str(self.loggedin)
 				print self.cookies.get('ssid')
 				print self.cookies.get('usid')
+			print "Logged in : " + str(self.loggedin)
 		return self.loggedin
 	
 	def getrecordingpage(self, page):
