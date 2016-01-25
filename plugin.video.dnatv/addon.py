@@ -113,7 +113,10 @@ def recordings_dir():
 
 	settings.setSetting( id='seriestitles', value=json.dumps(serieslist))
 	for recording in recordings:
-		if not recording['recordings'][0]['status'] == 'RECORDED':
+		try:
+			if not recording['recordings'][0]['status'] == 'RECORDED':
+				continue
+		except IndexError:
 			continue
 		groupmember = False
 		for seriestitle in serieslist:
@@ -146,13 +149,20 @@ def subdir():
 	seriestitle = serieslist[index]
 
 	for recording in recordings:
-		if 'series' not in recording:
+		try:
+			if not recording['recordings'][0]['status'] == 'RECORDED':
+				continue
+		except IndexError:
 			continue
-		if not recording['recordings'][0]['status'] == 'RECORDED':
+		try:
+			if not recording['series'] == seriestitle :
+				continue
+		except KeyError:
 			continue
-		if not recording['series'] == seriestitle :
+		try:
+			url = build_url({'mode': 'watch', 'videoUrl': recording['recordings'][1]['stream']['streamUrl']})
+		except IndexError:
 			continue
-		url = build_url({'mode': 'watch', 'videoUrl': recording['recordings'][1]['stream']['streamUrl']})
 		li = build_li(recording,False)
 		xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
 
