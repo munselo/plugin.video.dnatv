@@ -183,7 +183,7 @@ class DNATVSession(requests.Session):
 			dlfolder = settings.getSetting( id='dlfolder')
 		for recording in recordings:
 			if (str(sys.argv[5]) in recording['programUid']) or (str(sys.argv[5]).lower() in recording['title'].lower()):
-				print recording['title']
+				print recording['title'].encode('utf-8')
 				dlurl = self.getplayableurl(recording['recordings'][1]['stream']['streamUrl']).headers.get('location')
 				print dlurl
 				start_time = recording['startTime'].split()[4][:5].replace(':','')
@@ -192,9 +192,10 @@ class DNATVSession(requests.Session):
 				fOut = recording['title'] + ' ' + startDate + ' ' + start_time + '.mp4'
 				fOut = re.sub('[<>"/\|?*]',"", fOut)
 				fOut = dlfolder + fOut.replace(':',',')
+				fOut = fOut.encode('utf-8')
 				print fOut
 				response = requests.get(dlurl, stream=True)
-				downloadnotification = recording['title'] + ' ' + startDate + ' ' + start_time
+				downloadnotification = (recording['title'] + ' ' + startDate + ' ' + start_time).encode('utf-8')
 				if response.status_code == 200:
 					if self.testing:
 						print 'download started'
@@ -205,12 +206,13 @@ class DNATVSession(requests.Session):
 
 					else:
 						import xbmcvfs
-						xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30051) + ", " + downloadnotification + ")")
+						note = (", ").encode('utf-8') + downloadnotification + (")").encode('utf-8')
+						xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30051).encode('utf-8') + note )
 						f= xbmcvfs.File(fOut, 'w')
 						for chunk in response.iter_content(1024):
 							f.write(chunk)
 						f.close()
-						xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30052) + ", " + downloadnotification + ")")
+						xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30052).encode('utf-8') + note )
 				
 if __name__ == '__main__':
 #	print str(sys.argv)
