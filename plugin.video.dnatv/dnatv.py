@@ -166,10 +166,10 @@ class DNATVSession(requests.Session):
 		start_time = recording['startTime'].split()[4][:5]
 		s_time = time.strptime(recording['startTime'][:-6], '%a, %d %b %Y %H:%M:%S')
 		startDate = str(s_time[0]) + '.' + '%02d' % (s_time[1]) + '.'  + '%02d' % (s_time[2])
-		deletenotification = recording['title'] + ' ' + startDate + ' ' + start_time
+		deletenotification = (recording['title'] + ' ' + startDate + ' ' + start_time).encode('utf-8')
 		recordings.pop(index)
 		settings.setSetting( id='recordingList', value=json.dumps(recordings))
-		xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30050) + ", " + deletenotification + ")")
+		xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30050).encode('utf-8') + ", " + deletenotification + ")")
 		xbmc.executebuiltin('XBMC.Container.Refresh')
 
 	def downloadrecording(self, programid):
