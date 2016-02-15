@@ -26,7 +26,7 @@ def build_url(query):
 	return base_url + '?' + urllib.urlencode(query)
 
 def add_logout_context_menu_item(li):
-	argsLogout = username + ', ' + password + ', ' + servicename + ', ' + 'logout' + ', '
+	argsLogout = username + ', ' + password + ', ' + servicename + ', ' + '-logout' + ', '
 	logout = 'XBMC.RunScript(special://home/addons/plugin.video.dnatv/dnatv.py, ' + argsLogout + ')'
 	li.addContextMenuItems([(settings.getLocalizedString(30011), logout)])
 	return li
@@ -44,11 +44,11 @@ def build_li(recording, folder, title=None):
 		li.setInfo('video', { 'StartTime': start_time[4] , 'Date' : startDate,
 			'title' : recording['title'],'Plot' : recording['description']})
 		li.setProperty('IsPlayable', 'true')
-		argsDelete = username + ', ' + password + ', ' + servicename + ', ' + 'delete' + ', ' + recording['programUid']
+		argsDelete = username + ', ' + password + ', ' + servicename + ', ' + '-delete' + ', ' + recording['programUid']
 		deleteRecording = 'XBMC.RunScript(special://home/addons/plugin.video.dnatv/dnatv.py, ' + argsDelete + ')'
-		argsDownload = username + ', ' + password + ', ' + servicename + ', ' + 'download' + ', ' + recording['programUid']
+		argsDownload = username + ', ' + password + ', ' + servicename + ', ' + '-download' + ', ' + recording['programUid']
 		downloadRecording = 'XBMC.RunScript(special://home/addons/plugin.video.dnatv/dnatv.py, ' + argsDownload + ')'
-		argsLogout = username + ', ' + password + ', ' + servicename + ', ' + 'logout' + ', '
+		argsLogout = username + ', ' + password + ', ' + servicename + ', ' + '-logout' + ', '
 		logout = 'XBMC.RunScript(special://home/addons/plugin.video.dnatv/dnatv.py, ' + argsLogout + ')'
 		li = add_logout_context_menu_item( li )
 		li.addContextMenuItems([

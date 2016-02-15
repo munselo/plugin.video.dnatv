@@ -4,12 +4,18 @@ import requests
 from requests.auth import HTTPDigestAuth
 import urlparse
 
+testing= False
+
+try :
+	 import xbmcgui, xbmc, xbmcaddon, xbmcvfs
+except:
+	testing = True
+
 class DNATVSession(requests.Session):
-	def __init__(self, username, password, servicename, testing = False):
+	def __init__(self, username, password, servicename):
 		requests.Session.__init__(self)
 		self.testing = testing
 		if not testing:
-			import xbmcgui, xbmc, xbmcaddon
 			settings = xbmcaddon.Addon(id='plugin.video.dnatv')
 			self.cookies.update ({'ssid' : settings.getSetting( id='ssid')})
 			self.cookies.update ({'usid' : settings.getSetting( id='usid')})
@@ -69,7 +75,6 @@ class DNATVSession(requests.Session):
 			if 'usid' in self.cookies:
 				self.loggedin = True
 				if not self.testing:
-					import xbmcgui, xbmc, xbmcaddon
 					settings = xbmcaddon.Addon(id='plugin.video.dnatv')
 					ssid = settings.setSetting( id = 'ssid', value = self.cookies.get('ssid'))
 					usid = settings.setSetting( id = 'usid', value = self.cookies.get('usid'))
@@ -169,20 +174,20 @@ class DNATVSession(requests.Session):
 		deletenotification = (recording['title'] + ' ' + startDate + ' ' + start_time).encode('utf-8')
 		recordings.pop(index)
 		settings.setSetting( id='recordingList', value=json.dumps(recordings))
-		xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30050).encode('utf-8') + ", " + deletenotification + ")")
-		xbmc.executebuiltin('XBMC.Container.Refresh')
+		if not self.testing:
+			xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30050).encode('utf-8') + ", " + deletenotification + ")")
+			xbmc.executebuiltin('XBMC.Container.Refresh')
 
 	def downloadrecording(self, programid):
 		if self.testing:
 			recordings = self.getrecordings()
 			dlfolder = ''
 		else:
-			import xbmcaddon
 			settings = xbmcaddon.Addon(id='plugin.video.dnatv')
 			recordings = json.loads(settings.getSetting( id='recordingList'))
 			dlfolder = settings.getSetting( id='dlfolder')
 		for recording in recordings:
-			if (str(sys.argv[5]) in recording['programUid']) or (str(sys.argv[5]).lower() in recording['title'].lower()):
+			if (str(programid) in recording['programUid']) or (str(programid).lower() in recording['title'].lower()):
 				print recording['title'].encode('utf-8')
 				dlurl = self.getplayableurl(recording['recordings'][1]['stream']['streamUrl']).headers.get('location')
 				print dlurl
@@ -205,7 +210,6 @@ class DNATVSession(requests.Session):
 						print 'download completed'
 
 					else:
-						import xbmcvfs
 						note = (", ").encode('utf-8') + downloadnotification + (")").encode('utf-8')
 						xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30051).encode('utf-8') + note )
 						f= xbmcvfs.File(fOut, 'w')
@@ -216,11 +220,17 @@ class DNATVSession(requests.Session):
 				
 if __name__ == '__main__':
 #	print str(sys.argv)
-	if len(sys.argv) < 4:
-		sys.exit()
-	if 'test' in sys.argv:
+
+	if testing:
 		print time.time()
-		tsession = DNATVSession(sys.argv[1], sys.argv[2], sys.argv[3], True)
+		try:
+			txt = open('login.txt')
+			tsession = DNATVSession(txt.readline().strip(), txt.readline().strip(), txt.readline().strip())
+
+		except:
+			if len(sys.argv) < 4:
+				sys.exit()
+			tsession = DNATVSession(sys.argv[1], sys.argv[2], sys.argv[3])
 	else:
 		tsession = DNATVSession(sys.argv[1], sys.argv[2], sys.argv[3])		
 
@@ -228,11 +238,11 @@ if __name__ == '__main__':
 		if tsession.testing:
 			print time.time()
 
-		if str(sys.argv[4]) == 'delete':
-			tsession.deleterecording(sys.argv[5])
+		if '-delete' in sys.argv:
+			tsession.deleterecording(sys.argv[sys.argv.index('-delete')+1])
 
-		if str(sys.argv[4]) == 'download':
-			tsession.downloadrecording(sys.argv[5])
+		if '-download' in sys.argv:
+			tsession.downloadrecording(sys.argv[sys.argv.index('-download')+1])
 
-		if str(sys.argv[4]) == 'logout' or tsession.testing:
-			tsession.logout()
+		if '-logout' in sys.argv or tsession.testing:
+			tsession.logout() 
