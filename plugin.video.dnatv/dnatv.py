@@ -16,9 +16,9 @@ class DNATVSession(requests.Session):
 		requests.Session.__init__(self)
 		self.testing = testing
 		if not testing:
-			settings = xbmcaddon.Addon(id='plugin.video.dnatv')
-			self.cookies.update ({'ssid' : settings.getSetting( id='ssid')})
-			self.cookies.update ({'usid' : settings.getSetting( id='usid')})
+			self.Addon = xbmcaddon.Addon(id='plugin.video.dnatv')
+			self.cookies.update ({'ssid' : self.Addon.getSetting( id='ssid')})
+			self.cookies.update ({'usid' : self.Addon.getSetting( id='usid')})
 		else:
 			self.cookies.update({'ssid':'-'})
 			self.cookies.update({'usid':'-'})
@@ -46,7 +46,7 @@ class DNATVSession(requests.Session):
 			self.loggedin = True
 		else:
 			# saved session already expired or logged out
-			print 'Needs login to booxmedia service'
+			self.logentry('Needs login to booxmedia service')
 			self.cookies.pop('ssid')			
 			self.cookies.pop('usid')
 
@@ -75,13 +75,12 @@ class DNATVSession(requests.Session):
 			if 'usid' in self.cookies:
 				self.loggedin = True
 				if not self.testing:
-					settings = xbmcaddon.Addon(id='plugin.video.dnatv')
-					ssid = settings.setSetting( id = 'ssid', value = self.cookies.get('ssid'))
-					usid = settings.setSetting( id = 'usid', value = self.cookies.get('usid'))
+					ssid = self.Addon.setSetting( id = 'ssid', value = self.cookies.get('ssid'))
+					usid = self.Addon.setSetting( id = 'usid', value = self.cookies.get('usid'))
 			if self.testing:
-				print self.cookies.get('ssid')
-				print self.cookies.get('usid')
-			print "Logged in : " + str(self.loggedin)
+				self.logentry(self.cookies.get('ssid'))
+				self.logentry(self.cookies.get('usid'))
+			self.logentry('Logged in : ' + str(self.loggedin))
 		return self.loggedin
 	
 	def getrecordingpage(self, page):
@@ -94,7 +93,7 @@ class DNATVSession(requests.Session):
 				data = response.json()
 				break
 			except:
-				print "failed to get valid json data"
+				self.logentry('failed to get valid json data')
 				time.sleep(1)
 		return data
 		
@@ -126,7 +125,7 @@ class DNATVSession(requests.Session):
 				data = response.json()
 				break
 			except:
-				print "failed to get valid json data"
+				self.logentry('failed to get valid json data')
 				time.sleep(1)
 		return data['channelList']['channels']
 		
@@ -139,29 +138,24 @@ class DNATVSession(requests.Session):
 			return self.loggedin
 		payload = {'ajax' : '1', 'service' : self.servicedata[3]}
 		response = self.post(self.SITE + '/logout', params=payload)
-		if not self.testing:
-			import xbmcaddon
-			settings = xbmcaddon.Addon(id='plugin.video.dnatv')
 		if 'usid=deleted' in response.headers.get('set-cookie'):
 			self.loggedin = False
 			if self.testing:
-				print "Logged out: " + str(not self.loggedin)
+				self.logentry('Logged out: ' + unicode(not self.loggedin))
 			else:
-				xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30053) + ", " + ")")
+				self.notify(self.Addon.getLocalizedString(30053) + ', ')
 		else:
 			if self.testing:
-				print "Logged out: " + str(not self.loggedin)
+				self.logentry('Logged out: ' + unicode(not self.loggedin))
 			else:
-				xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30054) + ", " + ")")
+				self.notify(self.Addon.getLocalizedString(30054) + ', ')
 		return self.loggedin
 
 	def deleterecording(self, programid):
-		print "delete recording " + str(programid)
+		self.logentry('delete recording ' + str(programid))
 		payload = { 'program_uids' : str(programid), 'service' : self.servicedata[3], 'ajax' : '1'}
 		response = self.delete(self.SITE + '/recording', params=payload)
-		import xbmcaddon
-		settings = xbmcaddon.Addon(id='plugin.video.dnatv')
-		recordings = json.loads(settings.getSetting( id='recordingList'))
+		recordings = json.loads(self.Addon.getSetting( id='recordingList'))
 		index = 0		
 		for i in range(len(recordings)):
 			if str(programid) == recordings[i]['programUid']:
@@ -170,12 +164,11 @@ class DNATVSession(requests.Session):
 		recording = recordings[index]
 		start_time = recording['startTime'].split()[4][:5]
 		s_time = time.strptime(recording['startTime'][:-6], '%a, %d %b %Y %H:%M:%S')
-		startDate = str(s_time[0]) + '.' + '%02d' % (s_time[1]) + '.'  + '%02d' % (s_time[2])
-		deletenotification = (recording['title'] + ' ' + startDate + ' ' + start_time).encode('utf-8')
+		startDate = unicode(s_time[0]) + '.' + '%02d' % (s_time[1]) + '.'  + '%02d' % (s_time[2])
 		recordings.pop(index)
-		settings.setSetting( id='recordingList', value=json.dumps(recordings))
+		self.Addon.setSetting( id='recordingList', value=json.dumps(recordings))
 		if not self.testing:
-			xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30050).encode('utf-8') + ", " + deletenotification + ")")
+			self.notify(self.Addon.getLocalizedString(30050) + ', ' + recording['title'] + ' ' + startDate + ' ' + start_time )
 			xbmc.executebuiltin('XBMC.Container.Refresh')
 
 	def downloadrecording(self, programid):
@@ -183,40 +176,48 @@ class DNATVSession(requests.Session):
 			recordings = self.getrecordings()
 			dlfolder = ''
 		else:
-			settings = xbmcaddon.Addon(id='plugin.video.dnatv')
-			recordings = json.loads(settings.getSetting( id='recordingList'))
-			dlfolder = settings.getSetting( id='dlfolder')
+			recordings = json.loads(self.Addon.getSetting( id='recordingList'))
+			dlfolder = self.Addon.getSetting( id='dlfolder')
 		for recording in recordings:
 			if (str(programid) in recording['programUid']) or (str(programid).lower() in recording['title'].lower()):
-				print recording['title'].encode('utf-8')
+				self.logentry(recording['title'])
 				dlurl = self.getplayableurl(recording['recordings'][1]['stream']['streamUrl']).headers.get('location')
-				print dlurl
+				self.logentry(dlurl)
 				start_time = recording['startTime'].split()[4][:5].replace(':','')
 				s_time = time.strptime(recording['startTime'][:-6], '%a, %d %b %Y %H:%M:%S')
-				startDate = str(s_time[0]) + '.' + '%02d' % (s_time[1]) + '.'  + '%02d' % (s_time[2])
+				startDate = unicode(s_time[0]) + '.' + '%02d' % (s_time[1]) + '.'  + '%02d' % (s_time[2])
 				fOut = recording['title'] + ' ' + startDate + ' ' + start_time + '.mp4'
 				fOut = re.sub('[<>"/\|?*]',"", fOut)
 				fOut = dlfolder + fOut.replace(':',',')
-				fOut = fOut.encode('utf-8')
-				print fOut
+				self.logentry(fOut)
 				response = requests.get(dlurl, stream=True)
-				downloadnotification = (recording['title'] + ' ' + startDate + ' ' + start_time).encode('utf-8')
+				downloadnotification = (recording['title'] + ' ' + startDate + ' ' + start_time)
 				if response.status_code == 200:
 					if self.testing:
-						print 'download started'
+						self.logentry('download started')
 						with open(fOut, 'wb') as f:
 							for chunk in response.iter_content(1024):
 								f.write(chunk)
-						print 'download completed'
+						self.logentry('download completed')
 
 					else:
-						note = (", ").encode('utf-8') + downloadnotification + (")").encode('utf-8')
-						xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30051).encode('utf-8') + note )
-						f= xbmcvfs.File(fOut, 'w')
+						self.notify(self.Addon.getLocalizedString(30051) + ', ' + downloadnotification )
+						f = xbmcvfs.File(fOut, 'w')
 						for chunk in response.iter_content(1024):
 							f.write(chunk)
 						f.close()
-						xbmc.executebuiltin("XBMC.Notification(" + settings.getLocalizedString(30052).encode('utf-8') + note )
+						self.notify(self.Addon.getLocalizedString(30052)  + ', ' + downloadnotification )
+
+	def logentry (self, logtext):
+		if self.testing:
+			print logtext
+		else:
+			logtext = logtext.encode('utf-8')
+			xbmc.log(self.Addon.getAddonInfo('name') + ': ' + logtext)
+
+	def notify (self, notification):
+		notification = notification.encode('utf-8')
+		xbmc.executebuiltin('XBMC.Notification(' + notification + ')')
 				
 if __name__ == '__main__':
 #	print str(sys.argv)

@@ -1,3 +1,6 @@
+v0.3.2
+- xbmc.log() is now used to make log entries
+
 v0.3.1
 - Works only with requests 2.8.1.
 

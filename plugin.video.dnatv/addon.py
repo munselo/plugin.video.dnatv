@@ -166,6 +166,7 @@ def subdir():
 		li = build_li(recording,False)
 		xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
 
+	xbmcplugin.addSortMethod(int(sys.argv[1]), xbmcplugin.SORT_METHOD_LABEL)
 	xbmcplugin.addSortMethod(int(sys.argv[1]), xbmcplugin.SORT_METHOD_DATE)
 	xbmcplugin.endOfDirectory(addon_handle)
 
