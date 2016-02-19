@@ -84,17 +84,19 @@ class DNATVSession(requests.Session):
 		return self.loggedin
 	
 	def getrecordingpage(self, page):
-		data = None
+		data = [False, None]
 		pg = '&pg=' + str(page)
-		while True:
+		tries = 0
+		while tries < 5:
 			try :
 				et = '&et=' + str(int(time.time()))
 				response = self.get(self.SITE + '/recording/search?service=' + self.servicedata[3] + et + pg)
-				data = response.json()
-				break
+				data = [True, response.json()]
+				return data
 			except:
-				self.logentry('failed to get valid json data')
+				tries = tries + 1
 				time.sleep(1)
+		self.logentry('failed to get valid json data')
 		return data
 		
 	def getrecordings(self):
@@ -104,12 +106,23 @@ class DNATVSession(requests.Session):
 		while not page == totalpages:
 			page = page + 1
 			if page == 1:
-				data = self.getrecordingpage(page)
-				totalpages = data['recordedContent']['resultSet']['totalPages']
-				data = data['recordedContent']['programList']['programs']
+				recordingpage = self.getrecordingpage(page)
+				if recordingpage[0]:
+					data = recordingpage[1]
+					totalpages = data['recordedContent']['resultSet']['totalPages']
+					data = data['recordedContent']['programList']['programs']
+				else:
+					self.cleartemp()
+					return data
 			else:
-				newData = self.getrecordingpage(page)['recordedContent']['programList']['programs']
-				data = data + newData
+				recordingpage = self.getrecordingpage(page)
+				if recordingpage[0]:
+					newData = recordingpage[1]['recordedContent']['programList']['programs']
+					data = data + newData
+				else:
+					self.cleartemp()
+					data = None
+					return data
 		cutpoint = 0
 		while not data[cutpoint]['recordings']:
 			cutpoint = cutpoint + 1
@@ -118,20 +131,33 @@ class DNATVSession(requests.Session):
 	
 	def getlivetv(self):
 		data=None
-		while True:
+		tries = 0
+		while tries < 5:
 			try :
 				et = '&_=' + str(int(time.time()))
 				response = self.get(self.SITE + '/channel?output=full&include=epg%2Cliveservice&service=' + self.servicedata[3] +et)
-				data = response.json()
-				break
+				data = response.json()['channelList']['channels']
+				return data
 			except:
 				self.logentry('failed to get valid json data')
+				tries = tries + 1
 				time.sleep(1)
-		return data['channelList']['channels']
+		self.cleartemp()		
+		return data
 		
 	def getplayableurl(self, url):
 		response = self.get(url, allow_redirects=False)
 		return response
+
+	def cleartemp(self):
+		self.Addon.setSetting( id='lastRecordingsRefresh', value='0')
+		self.Addon.setSetting( id='recordingList', value='0')
+		self.Addon.setSetting( id='lastLiveTVrefresh', value='0')
+		self.Addon.setSetting( id='liveTVList', value= '0')
+		self.Addon.setSetting( id='seriestitles', value='0')
+		self.Addon.setSetting( id='ssid', value='0')
+		self.Addon.setSetting( id='usid', value='0')
+
 
 	def logout(self):
 		if not self.loggedin:
@@ -143,7 +169,11 @@ class DNATVSession(requests.Session):
 			if self.testing:
 				self.logentry('Logged out: ' + unicode(not self.loggedin))
 			else:
+				self.cleartemp()
 				self.notify(self.Addon.getLocalizedString(30053) + ', ')
+				xbmc.executebuiltin('xbmc.action(Back)')
+				xbmc.executebuiltin('xbmc.action(Back)')
+				xbmc.executebuiltin('xbmc.action(PreviousMenu)')
 		else:
 			if self.testing:
 				self.logentry('Logged out: ' + unicode(not self.loggedin))

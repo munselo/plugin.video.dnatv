@@ -83,6 +83,9 @@ def recordings_dir():
 		dnatv = DNATVSession(username, password, servicename)
 		if dnatv.login():
 			recordings = dnatv.getrecordings()
+			if recordings is None:
+				xbmc.executebuiltin('XBMC.Notification(' + settings.getLocalizedString(30055) + ', )')
+				sys.exit()
 			settings.setSetting( id='lastRecordingsRefresh', value=str(int(time.time())))
 			settings.setSetting( id='recordingList', value=json.dumps(recordings))
 
@@ -174,6 +177,9 @@ def livetv_dir():
 	dnatv = DNATVSession(username, password, servicename)
 	if dnatv.login():
 		liveTV = dnatv.getlivetv()
+		if liveTV is None:
+			xbmc.executebuiltin('XBMC.Notification(' + settings.getLocalizedString(30055) + ', )')
+			sys.exit()
 		for channel in liveTV:
 			if not channel['isUserAuthorized']:
 				continue

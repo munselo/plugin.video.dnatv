@@ -1,3 +1,6 @@
+v0.3.3.
+- Failing to enter folder from main menu should not cause infinite loops anymore.
+
 v0.3.2
 - xbmc.log() is now used to make log entries
 
