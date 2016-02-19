@@ -123,8 +123,7 @@ def recordings_dir():
 			continue
 		groupmember = False
 		for seriestitle in serieslist:
-			myregex = seriestitle + r'\b'
-			if re.match(myregex,recording['title']):
+			if re.match(seriestitle + r'\b',recording['title']) or re.match(seriestitle + r'\s',recording['title']):
 
 				if not seriestitle in existingfolders:
 					existingfolders.append(seriestitle)
