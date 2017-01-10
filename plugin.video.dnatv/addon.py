@@ -75,9 +75,9 @@ def main_dir():
 
 def recordings_dir():
 
-	# First check if the recording list is refreshed within two minutes and load it only if it's not
 	isnewlist = False
 
+	# First check if the recording list is refreshed within two minutes and load it only if it's not
 	if int(time.time())- last_refresh > 120:
 		isnewlist = True
 		dnatv = DNATVSession(username, password, servicename)
@@ -92,51 +92,61 @@ def recordings_dir():
 	else:
 		recordings = json.loads(settings.getSetting( id='recordingList'))
 
-	recordtitles = []
+	recordings = sorted(recordings, key=lambda k: k['title'])
 	serieslist = []
 	title_re = re.compile('[:(]')
-	
+
+	previous_title =''
 	for recording in recordings:
 		short_title = title_re.split(recording['title'])[0].strip()
-		if short_title in serieslist:
+		if short_title == previous_title:
+			if len(serieslist) == 0 or short_title != serieslist[len(serieslist)-1]:
+					serieslist.append(short_title)
 			continue
-		if short_title in recordtitles:
-			serieslist.append(short_title)
-		else:
-			recordtitles.append(short_title)
-	serieslist = set(serieslist)
-	removable = set()
-	for i in serieslist:
-		for j in serieslist:
-			if j.startswith(i+' ') and (i != j):
-				removable.add(j)
+		previous_title = short_title
 
-	serieslist = list(serieslist.difference(removable))
+	templist = serieslist
+	serieslist = [templist[0]]
+
+	for i in range(1,len(templist)):
+		if templist[i].startswith(templist[i-1] + ' ' ):
+			continue
+		serieslist.append(templist[i])
+
 	existingfolders = []
 
 	settings.setSetting( id='seriestitles', value=json.dumps(serieslist))
+
+	seriesindex = 0
+	seriesmember = False
+
 	for recording in recordings:
 		try:
-			if not recording['recordings'][0]['status'] == 'RECORDED':
+			if not recording['recordings'][1]['status'] == 'RECORDED':
 				continue
 		except IndexError:
 			continue
-		groupmember = False
-		for seriestitle in serieslist:
-			if re.match(seriestitle + r'\b',recording['title']) or re.match(seriestitle + r'\s',recording['title']):
-
-				if not seriestitle in existingfolders:
-					existingfolders.append(seriestitle)
-					url = build_url({'foldername': serieslist.index(seriestitle)})
-					li = build_li(recording, True, seriestitle)
+		while True:
+			if (re.match(serieslist[seriesindex] + r'\b',recording['title']) or
+				re.match(serieslist[seriesindex] + r'\s',recording['title'])):
+				seriesmember = True
+				recording['series'] = serieslist[seriesindex]
+				if not serieslist[seriesindex] in existingfolders:
+					existingfolders.append(serieslist[seriesindex])
+					url = build_url({'foldername': seriesindex})
+					li = build_li(recording, True, serieslist[seriesindex])
 					xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
-				recording['series'] = seriestitle
-				groupmember = True
-		if groupmember:
-			continue
-		url = build_url({'mode': 'watch', 'videoUrl': recording['recordings'][1]['stream']['streamUrl']})
-		li = build_li(recording, False)
-		xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
+				break
+			if seriesmember:
+				seriesmember = False
+				if seriesindex + 1 < len(serieslist):
+					seriesindex = seriesindex+1
+			else:
+				break
+		if not seriesmember:
+			url = build_url({'mode': 'watch', 'videoUrl': recording['recordings'][1]['stream']['streamUrl']})
+			li = build_li(recording, False)
+			xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
 
 	if isnewlist:
 		settings.setSetting( id='recordingList', value=json.dumps(recordings))

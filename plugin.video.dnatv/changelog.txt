@@ -1,4 +1,7 @@
-v0.3.3.
+v0.3.4
+- Recordings folder opens faster.
+
+v0.3.3
 - Failing to enter folder from main menu should not cause infinite loops anymore.
 
 v0.3.2
