@@ -96,13 +96,21 @@ def recordings_dir():
 	recordtitles = []
 	serieslist = []
 	title_re = re.compile('[:(]')
+	index=0
 	
 	for recording in recordings:
+		recording['order'] = index
+		index += 1
 		short_title = title_re.split(recording['title'])[0].strip()
 		if short_title in serieslist:
 			continue
 		if short_title in recordtitles:
 			serieslist.append(short_title)
+		try:
+			if not recording['recordings'][0]['status'] == 'RECORDED':
+				continue
+		except IndexError:
+			continue
 		else:
 			recordtitles.append(short_title)
 			seriescandidates.append(recording)
@@ -118,14 +126,19 @@ def recordings_dir():
 
 	serieslist.sort()
 	settings.setSetting( id='seriestitles', value=json.dumps(serieslist))
+	existingfolders = []
 
 	for recording in seriescandidates:
+		xbmc.log(recording['title'].encode('utf-8') + ' ' + recording['startTime'].encode('utf-8'))
 		for seriestitle in serieslist:
-			if re.match(seriestitle + r'\b',recording['title']) or re.match(seriestitle + r'\s',recording['title']):
-				url = build_url({'foldername': serieslist.index(seriestitle)})
-				li = build_li(recording, True, seriestitle)
-				xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
-				break
+			if (re.match(seriestitle + r'\b',recording['title']) or
+				re.match(seriestitle + r'\s',recording['title'])):
+					if not seriestitle in existingfolders:
+						existingfolders.append(seriestitle)
+						url = build_url({'foldername': serieslist.index(seriestitle)})
+						li = build_li(recording, True, seriestitle)
+						xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
+						break
 
 	recordings = sorted(recordings, key=lambda k: k['title'])
 	seriesindex = 0
@@ -155,6 +168,7 @@ def recordings_dir():
 			xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
 
 	if isnewlist:
+		recordings = sorted(recordings, key=lambda k: k['order'])
 		settings.setSetting( id='recordingList', value=json.dumps(recordings))
 	xbmcplugin.addSortMethod(int(sys.argv[1]), xbmcplugin.SORT_METHOD_LABEL)
 	xbmcplugin.addSortMethod(int(sys.argv[1]), xbmcplugin.SORT_METHOD_DATE)

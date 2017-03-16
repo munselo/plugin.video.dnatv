@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.dnatv" name="DNATV" version="0.3.5" provider-name="munselo">
+<addon id="plugin.video.dnatv" name="DNATV" version="0.3.6" provider-name="munselo">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.module.requests" version="2.8.1"/>
@@ -13,7 +13,11 @@
     <summary>DNATV</summary>
     <description lang="en">Watch your DNATV or Booxtv recordings and TV streams. You must have valid user account to use this plugin</description>
     <description lang="fi">Katso DNATV tai Booxtv palvelun tallenteita tai TV-lähetyksiä. Tarvitset voimassaolevan käyttäjätunnuksen</description>
+	<news>v0.3.6 (16.3.2017)
+		- DNATV login address changed</news>
 	<news>v0.3.5 (31.1.2017)
 		- Folder date fix.</news>
+	<news>v0.3.4 (10.1.2017)
+		- Recordings folder opens faster.</news>
     </extension>
 </addon>

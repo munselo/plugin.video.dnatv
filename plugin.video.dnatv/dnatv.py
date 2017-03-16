@@ -39,12 +39,18 @@ class DNATVSession(requests.Session):
 		self.loggedin = False
 		self.digest_auth = HTTPDigestAuth(username, password)
 		self.digest_auth.init_per_thread_state()
-		loginpage = ['https://tv.dna.fi/webui/site/login', 'https://webui.booxtv.fi/webui/site/login']
+		loginpage = ['https://tv.dna.fi/html5/#/home', 'https://webui.booxtv.fi/webui/site/login']
 		response = self.get(loginpage[services.index(servicename)])
 
 		if username in response.text:
 			self.loggedin = True
-		else:
+
+		response = self.get(self.SITE + '/recording/search?service=' + self.servicedata[3] + '&ipp=1')
+
+		if response.status_code is 200:
+			self.loggedin = True
+		
+		if not self.loggedin:
 			# saved session already expired or logged out
 			self.logentry('Needs login to booxmedia service')
 			self.cookies.pop('ssid')			
@@ -53,8 +59,9 @@ class DNATVSession(requests.Session):
 	def login(self):
 		if not self.loggedin:
 			# sessionid and x-authenticate response
-			payload = {'YII_CSRF_TOKEN' : self.cookies['YII_CSRF_TOKEN'], 'ajax' : '1', 'auth_user': '1',
-				'device_id' : '1'}
+#			payload = {'YII_CSRF_TOKEN' : self.cookies['YII_CSRF_TOKEN'], 'ajax' : '1', 'auth_user': '1',
+#				'device_id' : '1'}
+			payload = {'ajax' : '1', 'auth_user': '1', 'device_id' : '1'}
 			payload.update(self.servicedata[0])
 			# self.cookies.update({'lang':'fi'})
 			response = self.post(self.SITE + '/login', params=payload)
