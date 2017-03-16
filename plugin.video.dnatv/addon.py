@@ -129,7 +129,6 @@ def recordings_dir():
 	existingfolders = []
 
 	for recording in seriescandidates:
-		xbmc.log(recording['title'].encode('utf-8') + ' ' + recording['startTime'].encode('utf-8'))
 		for seriestitle in serieslist:
 			if (re.match(seriestitle + r'\b',recording['title']) or
 				re.match(seriestitle + r'\s',recording['title'])):
