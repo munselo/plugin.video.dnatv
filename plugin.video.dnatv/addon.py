@@ -19,6 +19,7 @@ username = settings.getSetting('username')
 password = settings.getSetting('password')
 servicename = settings.getSetting('servicename')
 last_refresh = int(settings.getSetting('lastRecordingsRefresh'))
+listagelimit = int(settings.getSetting('listAgeLimit'))
 
 xbmcplugin.setContent(addon_handle, 'movies')
 
@@ -75,11 +76,9 @@ def main_dir():
 
 def recordings_dir():
 
-	isnewlist = False
 
 	# First check if the recording list is refreshed within two minutes and load it only if it's not
-	if int(time.time())- last_refresh > 120:
-		isnewlist = True
+	if int(time.time())- last_refresh > (listagelimit *60):
 		dnatv = DNATVSession(username, password, servicename)
 		if dnatv.login():
 			recordings = dnatv.getrecordings()
@@ -96,79 +95,53 @@ def recordings_dir():
 	recordtitles = []
 	serieslist = []
 	title_re = re.compile('[:(]')
-	index=0
 	
 	for recording in recordings:
-		recording['order'] = index
-		index += 1
 		short_title = title_re.split(recording['title'])[0].strip()
-		if short_title in serieslist:
-			continue
-		if short_title in recordtitles:
-			serieslist.append(short_title)
 		try:
 			if not recording['recordings'][0]['status'] == 'RECORDED':
 				continue
 		except IndexError:
 			continue
+		if short_title in serieslist:
+			continue
+		if short_title in recordtitles:
+			serieslist.append(short_title)
+			continue
 		else:
 			recordtitles.append(short_title)
 			seriescandidates.append(recording)
 
-	serieslist = set(serieslist)
-	removable = set()
-	for i in serieslist:
-		for j in serieslist:
-			if j.startswith(i+' ') and (i != j):
-				removable.add(j)
-
-	serieslist = list(serieslist.difference(removable))
-
 	serieslist.sort()
 	settings.setSetting( id='seriestitles', value=json.dumps(serieslist))
 	existingfolders = []
+	series = False
 
 	for recording in seriescandidates:
+		series = False
 		for seriestitle in serieslist:
-			if (re.match(seriestitle + r'\b',recording['title']) or
-				re.match(seriestitle + r'\s',recording['title'])):
+			if re.match(seriestitle + r'\b',recording['title']):
 					if not seriestitle in existingfolders:
 						existingfolders.append(seriestitle)
 						url = build_url({'foldername': serieslist.index(seriestitle)})
 						li = build_li(recording, True, seriestitle)
 						xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
-						break
+					series = True
+					break
+#			if re.match(seriestitle + r'\s',recording['title']):
+#					if not seriestitle in existingfolders:
+#						existingfolders.append(seriestitle)
+#						url = build_url({'foldername': serieslist.index(seriestitle)})
+#						li = build_li(recording, True, seriestitle)
+#						xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
+#					series = True
+#					break
 
-	recordings = sorted(recordings, key=lambda k: k['title'])
-	seriesindex = 0
-	seriesmember = False
-
-	for recording in recordings:
-		try:
-			if not recording['recordings'][1]['status'] == 'RECORDED':
-				continue
-		except IndexError:
-			continue
-		while True:
-			if (re.match(serieslist[seriesindex] + r'\b',recording['title']) or
-				re.match(serieslist[seriesindex] + r'\s',recording['title'])):
-				seriesmember = True
-				recording['series'] = serieslist[seriesindex]
-				break
-			if seriesmember:
-				seriesmember = False
-				if seriesindex + 1 < len(serieslist):
-					seriesindex = seriesindex+1
-			else:
-				break
-		if not seriesmember:
+		if not series:
 			url = build_url({'mode': 'watch', 'videoUrl': recording['recordings'][1]['stream']['streamUrl']})
 			li = build_li(recording, False)
 			xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
 
-	if isnewlist:
-		recordings = sorted(recordings, key=lambda k: k['order'])
-		settings.setSetting( id='recordingList', value=json.dumps(recordings))
 	xbmcplugin.addSortMethod(int(sys.argv[1]), xbmcplugin.SORT_METHOD_LABEL)
 	xbmcplugin.addSortMethod(int(sys.argv[1]), xbmcplugin.SORT_METHOD_DATE)
 	xbmcplugin.endOfDirectory(addon_handle)
@@ -186,16 +159,17 @@ def subdir():
 		except IndexError:
 			continue
 		try:
-			if not recording['series'] == seriestitle :
-				continue
-		except KeyError:
+			if re.match(seriestitle + r'\b',recording['title']):
+#			if(re.match(seriestitle + r'\b',recording['title']) or
+#				re.match(seriestitle + r'\s',recording['title'])):
+				try:
+					url = build_url({'mode': 'watch', 'videoUrl': recording['recordings'][1]['stream']['streamUrl']})
+					li = build_li(recording,False)
+					xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
+				except IndexError:
+					continue
+		except:
 			continue
-		try:
-			url = build_url({'mode': 'watch', 'videoUrl': recording['recordings'][1]['stream']['streamUrl']})
-		except IndexError:
-			continue
-		li = build_li(recording,False)
-		xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
 
 	xbmcplugin.addSortMethod(int(sys.argv[1]), xbmcplugin.SORT_METHOD_LABEL)
 	xbmcplugin.addSortMethod(int(sys.argv[1]), xbmcplugin.SORT_METHOD_DATE)
