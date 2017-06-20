@@ -45,10 +45,10 @@ class DNATVSession(requests.Session):
 		if username in response.text:
 			self.loggedin = True
 
-		response = self.get(self.SITE + '/recording/search?service=' + self.servicedata[3] + '&ipp=1')
-
-		if response.status_code is 200:
-			self.loggedin = True
+		else:
+			response = self.get(self.SITE + '/recording/search?service=' + self.servicedata[3] + '&ipp=1')
+			if response.status_code is 200:
+				self.loggedin = True
 		
 		if not self.loggedin:
 			# saved session already expired or logged out

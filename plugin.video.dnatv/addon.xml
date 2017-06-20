@@ -19,5 +19,8 @@
 		- Folder date fix.</news>
 	<news>v0.3.4 (10.1.2017)
 		- Recordings folder opens faster.</news>
+	<assets>
+		<icon>resources/icon.png</icon>
+	</assets>		
     </extension>
 </addon>
