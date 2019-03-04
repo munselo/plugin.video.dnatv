@@ -8,6 +8,7 @@ import xbmcplugin
 import time
 import json
 import re
+import locale
 from dnatv import DNATVSession
 
 base_url = sys.argv[0]
@@ -23,6 +24,16 @@ listagelimit = int(settings.getSetting('listAgeLimit'))
 
 xbmcplugin.setContent(addon_handle, 'movies')
 
+try:
+	locale.setlocale(locale.LC_TIME, 'English')
+except:
+	pass
+
+try:
+	locale.setlocale(locale.LC_TIME, 'en_GB.utf8')
+except:
+	pass
+
 def build_url(query):
 	return base_url + '?' + urllib.urlencode(query)
 
@@ -33,7 +44,6 @@ def add_logout_context_menu_item(li):
 	return li
 
 def build_li(recording, folder, title=None):
-	start_time = recording['startTime'].split()
 	s_time = time.strptime(recording['startTime'][:-6], '%a, %d %b %Y %H:%M:%S')
 	startDate = '%02d' % (s_time[2]) + '.' + '%02d' % (s_time[1]) + '.'  + str(s_time[0])
 	if folder:
@@ -42,8 +52,7 @@ def build_li(recording, folder, title=None):
 		add_logout_context_menu_item( li )
 	else:
 		li = xbmcgui.ListItem(recording['title'],iconImage = 'DefaultFile.png')
-		li.setInfo('video', { 'StartTime': start_time[4] , 'Date' : startDate,
-			'title' : recording['title'],'Plot' : recording['description']})
+		li.setInfo('video', { 'Date' : startDate, 'title' : recording['title'],'Plot' : recording['description']})
 		li.setProperty('IsPlayable', 'true')
 		argsDelete = username + ', ' + password + ', ' + servicename + ', ' + '-delete' + ', ' + recording['programUid']
 		deleteRecording = 'XBMC.RunScript(special://home/addons/plugin.video.dnatv/dnatv.py, ' + argsDelete + ')'
@@ -190,9 +199,7 @@ def livetv_dir():
 			except IndexError:
 				continue
 			li = xbmcgui.ListItem(channel['title'], iconImage='DefaultFile.png')
-			start_time = channel['epg'][0]['startTime'].split()
-			li.setInfo('video', { 'StartTime': start_time[4],
-				'Plot' : channel['epg'][0]['title'] + '\n' + channel['epg'][0]['description']})
+			li.setInfo('video', { 'Plot' : channel['epg'][0]['title'] + '\n' + channel['epg'][0]['description']})
 			li.setProperty('IsPlayable', 'true')
 			add_logout_context_menu_item( li )
 			xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
